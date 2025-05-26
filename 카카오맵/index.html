@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>제주도 여행 일정 지도</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #f76707;
+        }
+
+        header p {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .day-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .day-btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .day-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .day-btn.active {
+            background-color: #f76707;
+            color: white;
+        }
+
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        #map {
+            flex: 1;
+            height: 600px;
+            min-width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .places-list {
+            flex: 0 0 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .places-list h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #f76707;
+        }
+
+        #places {
+            list-style: none;
+        }
+
+        #places li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #places li:last-child {
+            border-bottom: none;
+        }
+
+        .place-time {
+            font-weight: bold;
+            color: #f76707;
+        }
+
+        .place-name {
+            font-weight: bold;
+        }
+
+        .place-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        footer a {
+            color: #f76707;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .places-list {
+                flex: 1;
+            }
+            
+            .day-btn {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+        }
+        
+        .marker-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f76707;
+            color: white;
+            font-weight: bold;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-window {
+            padding: 10px;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        .info-window h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #f76707;
+        }
+        
+        .info-window p {
+            margin: 0 0 3px 0;
+            font-size: 14px;
+        }
+
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .error-message h3 {
+            color: #f76707;
+            margin-top: 0;
+        }
+
+        .error-message p {
+            margin-bottom: 15px;
+        }
+
+        .error-message code {
+            display: block;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .error-message button {
+            background-color: #f76707;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>제주도 3박 4일 여행 일정 지도</h1>
+            <p>카카오맵을 이용한 일차별 이동경로 확인</p>
+        </header>
+
+        <div class="day-selector">
+            <button class="day-btn active" data-day="1">1일차</button>
+            <button class="day-btn" data-day="2">2일차</button>
+            <button class="day-btn" data-day="3">3일차</button>
+            <button class="day-btn" data-day="4">4일차</button>
+        </div>
+
+        <div class="content">
+            <div id="map"></div>
+            <div class="places-list">
+                <h2 id="day-title">1일차: 제주공항 → 서부 → 서남부 (모슬포/사계 숙소)</h2>
+                <ul id="places"></ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>* 카카오맵 API가 적용되었습니다. 더 자세한 정보는 <a href="https://apis.map.kakao.com/" target="_blank">카카오맵 API</a>에서 확인하세요.</p>
+        </footer>
+    </div>
+
+    <div id="error-message" class="error-message hidden">
+        <h3>카카오맵 API 로드 실패</h3>
+        <p>로컬 파일(file:// 프로토콜)에서는 카카오맵 API가 정상적으로 작동하지 않을 수 있습니다.</p>
+        <p>간단한 로컬 웹서버를 통해 접속하는 것을 권장합니다:</p>
+        <code>
+# Node.js가 설치된 경우:
+npm install -g http-server
+http-server
+
+# Python이 설치된 경우:
+# Python 3:
+python -m http.server
+# Python 2:
+python -m SimpleHTTPServer
+        </code>
+        <p>웹서버 실행 후 <strong>http://localhost:8080</strong>으로 접속하세요.</p>
+        <button onclick="document.getElementById('error-message').classList.add('hidden')">닫기</button>
+    </div>
+
+    <!-- 카카오맵 API 스크립트 - body 태그 끝에 배치 -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5cda008d02047bd5e619b759494363c4"></script>
+    <script>
+        // 카카오맵 API를 사용하기 위한 변수들
+        let map = null;
+        let markers = [];
+        let polylines = [];
+        let infoWindows = [];
+        let currentDay = 1;
+        
+        // 제주도 여행 일정 데이터
+        const scheduleData = [
+            // 1일차
+            {
+                day: 1,
+                title: "제주공항 → 서부 → 서남부 (모슬포/사계 숙소)",
+                places: [
+                    {
+                        name: "제주공항",
+                        description: "렌트카 픽업 (30분)",
+                        time: "09:00",
+                        lat: 33.5066778,
+                        lng: 126.4926875
+                    },
+                    {
+                        name: "애월 해지개 카페",
+                        description: "애월 해안도로에 위치한 오션뷰 카페",
+                        time: "09:30",
+                        distance: "약 25km",
+                        duration: "30분",
+                        lat: 33.4611,
+                        lng: 126.3095
+                    },
+                    {
+                        name: "랜디스도넛",
+                        description: "애월에서 유명한 수제 도넛 맛집",
+                        time: "11:00",
+                        distance: "약 1km",
+                        duration: "5분",
+                        lat: 33.4628,
+                        lng: 126.3105
+                    },
+                    {
+                        name: "협재해변",
+                        description: "에메랄드빛 바다와 하얀 모래사장이 아름다운 해변",
+                        time: "12:00",
+                        distance: "약 12km",
+                        duration: "20분",
+                        lat: 33.3940,
+                        lng: 126.2402
+                    },
+                    {
+                        name: "우진해장국",
+                        description: "점심: 담백한 해장국",
+                        time: "13:00",
+                        lat: 33.3930,
+                        lng: 126.2420
+                    },
+                    {
+                        name: "금오름",
+                        description: "완만한 경사로 쉽게 오를 수 있는 오름",
+                        time: "14:00",
+                        distance: "약 10km",
+                        duration: "15분",
+                        lat: 33.3548,
+                        lng: 126.3055
+                    },
+                    {
+                        name: "모슬포/사계 숙소",
+                        description: "숙소 체크인 및 휴식",
+                        time: "17:00",
+                        distance: "약 30km",
+                        duration: "40분",
+                        lat: 33.2167,
+                        lng: 126.2500
+                    },
+                    {
+                        name: "바다풍경",
+                        description: "저녁: 모슬포 고등어회 맛집",
+                        time: "19:00",
+                        lat: 33.2160,
+                        lng: 126.2520
+                    },
+                    {
+                        name: "수애기 베이커리 카페",
+                        description: "바다 전망이 아름다운 베이커리 카페, TWG 차와 맛있는 빵 제공",
+                        time: "21:00",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.2230,
+                        lng: 126.2450
+                    }
+                ]
+            },
+            // 2일차
+            {
+                day: 2,
+                title: "서남부 지역 관광 (모슬포/사계 숙소)",
+                places: [
+                    {
+                        name: "모슬포/사계 숙소",
+                        description: "출발",
+                        time: "09:00",
+                        lat: 33.2167,
+                        lng: 126.2500
+                    },
+                    {
+                        name: "송악산",
+                        description: "제주 서남부 해안과 산방산을 조망할 수 있는 오름",
+                        time: "09:30",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.1987,
+                        lng: 126.2913
+                    },
+                    {
+                        name: "송악산항 선착장",
+                        description: "마라도 배 탑승",
+                        time: "11:30",
+                        distance: "약 3km",
+                        duration: "5분",
+                        lat: 33.2083,
+                        lng: 126.2917
+                    },
+                    {
+                        name: "마라도",
+                        description: "대한민국 최남단 섬",
+                        time: "12:00",
+                        lat: 33.1166,
+                        lng: 126.2666
+                    },
+                    {
+                        name: "마라도 짜장면",
+                        description: "점심: 마라도 짜장면",
+                        time: "13:00",
+                        lat: 33.1166,
+                        lng: 126.2670
+                    },
+                    {
+                        name: "가파도",
+                        description: "청보리 군락지로 유명한 작은 섬",
+                        time: "14:30",
+                        lat: 33.1693,
+                        lng: 126.2719
+                    },
+                    {
+                        name: "사계해변",
+                        description: "산방산을 배경으로 한 아름다운 해변, 일몰 명소",
+                        time: "17:00",
+                        distance: "배 이동 후 약 8km",
+                        duration: "30분",
+                        lat: 33.2336,
+                        lng: 126.3136
+                    },
+                    {
+                        name: "덕승식당",
+                        description: "저녁: 갈치조림과 우럭조림으로 유명한 현지인 맛집",
+                        time: "18:30",
+                        lat: 33.2167,
+                        lng: 126.2550
+                    }
+                ]
+            },
+            // 3일차
+            {
+                day: 3,
+                title: "서남부 → 남동부 (중문 숙소)",
+                places: [
+                    {
+                        name: "모슬포/사계 숙소",
+                        description: "출발",
+                        time: "09:00",
+                        lat: 33.2167,
+                        lng: 126.2500
+                    },
+                    {
+                        name: "산방산",
+                        description: "거대한 종 모양의 화산암체",
+                        time: "09:30",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.2368,
+                        lng: 126.3130
+                    },
+                    {
+                        name: "용머리해안",
+                        description: "파도에 의해 침식된 독특한 지형의 해안가",
+                        time: "10:40",
+                        distance: "약 2km",
+                        duration: "5분",
+                        lat: 33.2344,
+                        lng: 126.3142
+                    },
+                    {
+                        name: "군산오름",
+                        description: "아름다운 풍경을 감상할 수 있는 오름",
+                        time: "11:45",
+                        distance: "약 15km",
+                        duration: "25분",
+                        lat: 33.2833,
+                        lng: 126.4000
+                    },
+                    {
+                        name: "더클리프",
+                        description: "바다 전망이 아름다운 레스토랑",
+                        time: "13:10",
+                        distance: "약 10km",
+                        duration: "15분",
+                        lat: 33.2414,
+                        lng: 126.4244
+                    },
+                    {
+                        name: "약천사",
+                        description: "아름다운 사찰로 평화로운 분위기의 명소",
+                        time: "14:55",
+                        distance: "약 20km",
+                        duration: "30분",
+                        lat: 33.2550,
+                        lng: 126.5550
+                    },
+                    {
+                        name: "새연교",
+                        description: "서귀포 새섬으로 연결되는 아름다운 다리",
+                        time: "16:10",
+                        distance: "약 15km",
+                        duration: "25분",
+                        lat: 33.2394,
+                        lng: 126.5583
+                    },
+                    {
+                        name: "정방폭포",
+                        description: "바다로 직접 떨어지는 해안 폭포",
+                        time: "17:05",
+                        distance: "약 3km",
+                        duration: "10분",
+                        lat: 33.2444,
+                        lng: 126.5727
+                    },
+                    {
+                        name: "허니문하우스",
+                        description: "아기자기한 카페",
+                        time: "17:45",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.2520,
+                        lng: 126.5800
+                    },
+                    {
+                        name: "중문 숙소",
+                        description: "숙소 체크인",
+                        time: "19:15",
+                        distance: "약 10km",
+                        duration: "20분",
+                        lat: 33.2536,
+                        lng: 126.4100
+                    },
+                    {
+                        name: "착한전복",
+                        description: "저녁: 중문에 위치한 전복요리 전문점",
+                        time: "20:00",
+                        lat: 33.2536,
+                        lng: 126.4120
+                    }
+                ]
+            },
+            // 4일차
+            {
+                day: 4,
+                title: "중문 → 성산 → 공항",
+                places: [
+                    {
+                        name: "중문 숙소",
+                        description: "출발",
+                        time: "09:00",
+                        lat: 33.2536,
+                        lng: 126.4100
+                    },
+                    {
+                        name: "섭지코지",
+                        description: "성산일출봉을 배경으로 한 아름다운 해안가",
+                        time: "09:00",
+                        distance: "약 40km",
+                        duration: "50분",
+                        lat: 33.4312,
+                        lng: 126.9275
+                    },
+                    {
+                        name: "광치기해변",
+                        description: "성산일출봉이 보이는 아름다운 해변",
+                        time: "10:50",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.4585,
+                        lng: 126.9350
+                    },
+                    {
+                        name: "섭지코지로",
+                        description: "점심: 고등어쌈밥",
+                        time: "12:00",
+                        lat: 33.4320,
+                        lng: 126.9280
+                    },
+                    {
+                        name: "성산일출봉",
+                        description: "유네스코 세계자연유산",
+                        time: "13:00",
+                        distance: "약 5km",
+                        duration: "10분",
+                        lat: 33.4580,
+                        lng: 126.9400
+                    },
+                    {
+                        name: "해일리카페",
+                        description: "성산일출봉과 우도를 조망할 수 있는 오션뷰 카페",
+                        time: "14:40",
+                        distance: "약 2km",
+                        duration: "5분",
+                        lat: 33.4600,
+                        lng: 126.9350
+                    },
+                    {
+                        name: "제주공항",
+                        description: "렌터카 반납",
+                        time: "17:15",
+                        distance: "약 50km",
+                        duration: "1시간",
+                        lat: 33.5066778,
+                        lng: 126.4926875
+                    }
+                ]
+            }
+        ];
+
+        // 페이지 로드 시 실행
+        window.onload = function() {
+            try {
+                // 지도 초기화
+                initMap();
+            } catch (error) {
+                console.error('지도 초기화 중 오류 발생:', error);
+                document.getElementById('error-message').classList.remove('hidden');
+            }
+        };
+
+        // 지도 초기화 함수
+        function initMap() {
+            // 지도 컨테이너 확인
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) {
+                console.error('지도 컨테이너(#map)를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 제주도 중심 좌표
+            const jejuCenter = new kakao.maps.LatLng(33.3616, 126.5292);
+            
+            // 지도 옵션
+            const mapOption = {
+                center: jejuCenter,
+                level: 10
+            };
+            
+            // 지도 생성
+            map = new kakao.maps.Map(mapContainer, mapOption);
+            
+            // 지도 컨트롤 추가
+            const zoomControl = new kakao.maps.ZoomControl();
+            map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+            
+            // 일차 버튼 클릭 이벤트 설정
+            setupEventListeners();
+            
+            // 초기 데이터 로드 (1일차)
+            loadDayData(currentDay);
+            
+            console.log('지도 초기화 완료');
+        }
+
+        // 이벤트 리스너 설정 함수
+        function setupEventListeners() {
+            const dayButtons = document.querySelectorAll('.day-btn');
+            dayButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const day = parseInt(this.getAttribute('data-day'));
+                    changeDay(day);
+                    
+                    // 활성 버튼 스타일 변경
+                    dayButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // 일차별 데이터 로드 함수
+        function loadDayData(day) {
+            // 기존 마커, 폴리라인, 정보창 제거
+            clearMapObjects();
+            
+            // 해당 일차 데이터 가져오기
+            const dayData = scheduleData.find(data => data.day === day);
+            if (!dayData) return;
+            
+            // 일차 제목 업데이트
+            document.getElementById('day-title').textContent = `${day}일차: ${dayData.title}`;
+            
+            // 장소 목록 업데이트
+            updatePlacesList(dayData.places);
+            
+            // 마커 및 경로 표시
+            displayMarkers(dayData.places);
+            displayRoute(dayData.places);
+            
+            // 지도 영역 조정
+            fitMapBounds(dayData.places);
+        }
+
+        // 장소 목록 업데이트 함수
+        function updatePlacesList(places) {
+            const placesList = document.getElementById('places');
+            placesList.innerHTML = '';
+            
+            places.forEach(place => {
+                const li = document.createElement('li');
+                
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'place-time';
+                timeSpan.textContent = place.time + ' ';
+                li.appendChild(timeSpan);
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'place-name';
+                nameSpan.textContent = place.name;
+                li.appendChild(nameSpan);
+                
+                if (place.description) {
+                    const br = document.createElement('br');
+                    li.appendChild(br);
+                    
+                    const descSpan = document.createElement('span');
+                    descSpan.className = 'place-description';
+                    descSpan.textContent = place.description;
+                    li.appendChild(descSpan);
+                }
+                
+                if (place.distance && place.duration) {
+                    const br = document.createElement('br');
+                    li.appendChild(br);
+                    
+                    const distanceSpan = document.createElement('span');
+                    distanceSpan.className = 'place-description';
+                    distanceSpan.textContent = `이동: ${place.distance} (${place.duration})`;
+                    li.appendChild(distanceSpan);
+                }
+                
+                placesList.appendChild(li);
+            });
+        }
+
+        // 마커 표시 함수
+        function displayMarkers(places) {
+            places.forEach((place, index) => {
+                // 마커 생성
+                const markerPosition = new kakao.maps.LatLng(place.lat, place.lng);
+                
+                // 커스텀 마커 생성
+                const content = `<div class="marker-number">${index + 1}</div>`;
+                
+                const customOverlay = new kakao.maps.CustomOverlay({
+                    position: markerPosition,
+                    content: content,
+                    yAnchor: 1
+                });
+                
+                // 마커를 지도에 표시
+                customOverlay.setMap(map);
+                markers.push(customOverlay);
+                
+                // 인포윈도우 생성
+                const infoContent = `
+                    <div class="info-window">
+                        <h3>${place.name}</h3>
+                        <p>${place.time}</p>
+                        <p>${place.description || ''}</p>
+                        ${place.distance ? `<p>이동: ${place.distance} (${place.duration})</p>` : ''}
+                    </div>
+                `;
+                
+                const infoWindow = new kakao.maps.InfoWindow({
+                    content: infoContent,
+                    removable: true
+                });
+                
+                // 마커 클릭 시 인포윈도우 표시
+                kakao.maps.event.addListener(customOverlay, 'click', function() {
+                    infoWindow.open(map, markerPosition);
+                });
+                
+                // 배열에 추가
+                infoWindows.push(infoWindow);
+            });
+        }
+
+        // 경로 표시 함수
+        function displayRoute(places) {
+            if (places.length < 2) return;
+            
+            const linePath = places.map(place => new kakao.maps.LatLng(place.lat, place.lng));
+            
+            const polyline = new kakao.maps.Polyline({
+                path: linePath,
+                strokeWeight: 3,
+                strokeColor: '#f76707',
+                strokeOpacity: 0.7,
+                strokeStyle: 'solid'
+            });
+            
+            polyline.setMap(map);
+            polylines.push(polyline);
+        }
+
+        // 지도 영역 조정 함수
+        function fitMapBounds(places) {
+            if (places.length === 0) return;
+            
+            const bounds = new kakao.maps.LatLngBounds();
+            
+            places.forEach(place => {
+                bounds.extend(new kakao.maps.LatLng(place.lat, place.lng));
+            });
+            
+            map.setBounds(bounds, 50);
+        }
+
+        // 마커, 폴리라인, 정보창 제거 함수
+        function clearMapObjects() {
+            // 마커 제거
+            markers.forEach(marker => {
+                marker.setMap(null);
+            });
+            markers = [];
+            
+            // 폴리라인 제거
+            polylines.forEach(polyline => {
+                polyline.setMap(null);
+            });
+            polylines = [];
+            
+            // 정보창 제거
+            infoWindows.forEach(infoWindow => {
+                infoWindow.close();
+            });
+            infoWindows = [];
+        }
+
+        // 일차 변경 함수
+        function changeDay(day) {
+            currentDay = day;
+            loadDayData(day);
+        }
+    </script>
+</body>
+</html>

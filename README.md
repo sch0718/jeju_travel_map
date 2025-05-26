@@ -14,6 +14,13 @@
 
 ```
 jeju_travel_map/
+├── css/
+│   ├── kakao.css    # 카카오맵 웹 페이지용 스타일시트
+│   └── naver.css    # 네이버맵 웹 페이지용 스타일시트
+├── js/
+│   ├── data.js      # 일정 데이터 관리
+│   ├── kakao_map.js # 카카오맵 관련 기능
+│   └── naver_map.js # 네이버맵 관련 기능
 ├── kakao_map/
 │   └── index.html   # 카카오맵 API 기반 웹 페이지
 ├── naver_map/
@@ -30,16 +37,20 @@ jeju_travel_map/
 - 일차별 여행 경로 및 장소 표시 기능 구현
 - 모바일 반응형 UI 적용
 
+### 2. 웹 앱 구조 개선
+- HTML, CSS, JavaScript 코드 분리 완료
+- CSS를 별도 파일로 분리 (kakao.css, naver.css)
+- JavaScript를 기능별로 분리
+  - 데이터 관리 (`data.js`)
+  - 카카오맵 관련 기능 (`kakao_map.js`)
+  - 네이버맵 관련 기능 (`naver_map.js`)
+
 ## 다음 개발 단계
 
-### 1. 웹 앱 구조 개선
-- HTML, CSS, JavaScript 코드 분리
-- CSS를 별도 파일로 분리
-- JavaScript를 기능별로 분리
-  - 설정 관리 (`config.js`)
-  - 지도 관련 기능 (`map.js`)
-  - 애플리케이션 로직 (`app.js`)
-- 데이터를 JSON 파일로 분리 (`schedule.json`)
+### 1. 구조 최적화
+- CSS 중복 코드 최소화 및 공통 스타일 분리
+- 자바스크립트 코드 모듈화 개선
+- 반응형 디자인 강화
 
 ### 2. 안드로이드 앱 개발
 - WebView 기반 앱 구조 개발
@@ -72,22 +83,22 @@ jeju_travel_map/
 npm install -g http-server
 
 # 현재 디렉토리에서 웹 서버 실행
-http-server
+http-server -p 3000
 ```
 
 #### Python을 사용하는 경우:
 
 ```bash
 # Python 3
-python -m http.server
+python -m http.server 3000
 
 # Python 2
-python -m SimpleHTTPServer
+python -m SimpleHTTPServer 3000
 ```
 
 웹 서버 실행 후 브라우저에서 다음 주소로 접속하세요:
-- 카카오맵 버전: [http://localhost:8080/kakao_map/](http://localhost:8080/kakao_map/)
-- 네이버맵 버전: [http://localhost:8080/naver_map/](http://localhost:8080/naver_map/)
+- 카카오맵 버전: [http://localhost:3000/kakao_map/](http://localhost:3000/kakao_map/)
+- 네이버맵 버전: [http://localhost:3000/naver_map/](http://localhost:3000/naver_map/)
 
 ## 일정 정보
 
